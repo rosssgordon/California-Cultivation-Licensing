@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cannabis Cultivation Licensing in California</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;600;700&family=Source+Serif+4:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --color-bg: #fafafa;
+            --color-surface: #ffffff;
+            --color-text: #1a1a1a;
+            --color-text-secondary: #666666;
+            --color-border: #e5e5e5;
+            --color-accent: #2d5a27;
+            --color-accent-light: #e8f0e7;
+            --color-negative: #b54a4a;
+            --color-positive: #4a8b4a;
+        }
+        body {
+            font-family: 'Source Sans 3', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--color-bg);
+            color: var(--color-text);
+            line-height: 1.6;
+        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid var(--color-border);
+        }
+        h1 {
+            font-family: 'Source Serif 4', Georgia, serif;
+            font-size: 2.5rem;
+            font-weight: 600;
+            color: var(--color-text);
+            margin-bottom: 0.5rem;
+        }
+        .subtitle { font-size: 1.1rem; color: var(--color-text-secondary); margin-bottom: 1rem; }
+        .date-range {
+            display: inline-block;
+            background: var(--color-accent-light);
+            color: var(--color-accent);
+            padding: 0.4rem 1rem;
+            border-radius: 2rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+        .stat-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+        }
+        .stat-value {
+            font-family: 'Source Serif 4', Georgia, serif;
+            font-size: 2.5rem;
+            font-weight: 600;
+            color: var(--color-text);
+        }
+        .stat-change { font-size: 0.95rem; margin-top: 0.5rem; font-weight: 600; }
+        .stat-change.negative { color: var(--color-negative); }
+        .stat-change.positive { color: var(--color-positive); }
+        .chart-section {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .chart-title { font-family: 'Source Serif 4', Georgia, serif; font-size: 1.4rem; font-weight: 600; }
+        .chart-controls { display: flex; gap: 0.5rem; }
+        .btn {
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+        .btn:hover { background: var(--color-accent-light); border-color: var(--color-accent); }
+        .chart-container { position: relative; height: 400px; }
+        .chart-hint { text-align: center; font-size: 0.85rem; color: var(--color-text-secondary); margin-top: 1rem; }
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+        th, td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid var(--color-border); }
+        th {
+            background: var(--color-bg);
+            font-weight: 600;
+            color: var(--color-text-secondary);
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 0.05em;
+            cursor: pointer;
+            user-select: none;
+        }
+        th:hover { background: var(--color-accent-light); }
+        th.sorted-asc::after { content: ' ↑'; }
+        th.sorted-desc::after { content: ' ↓'; }
+        tr:hover { background: var(--color-bg); }
+        .change-negative { color: var(--color-negative); }
+        .change-positive { color: var(--color-positive); }
+        .methodology { background: var(--color-bg); border-radius: 8px; padding: 2rem; margin-top: 2rem; }
+        .methodology h2 { font-family: 'Source Serif 4', Georgia, serif; font-size: 1.3rem; margin-bottom: 1rem; }
+        .methodology p, .methodology li { color: var(--color-text-secondary); font-size: 0.95rem; margin-bottom: 0.75rem; }
+        .methodology ul { margin-left: 1.5rem; }
+        footer { text-align: center; padding: 2rem; color: var(--color-text-secondary); font-size: 0.9rem; }
+        footer a { color: var(--color-accent); text-decoration: none; }
+        footer a:hover { text-decoration: underline; }
+        @media (max-width: 768px) {
+            .container { padding: 1rem; }
+            h1 { font-size: 1.8rem; }
+            .stat-value { font-size: 2rem; }
+            .chart-container { height: 300px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Cannabis Cultivation Licensing in California</h1>
+            <p class="subtitle">Tracking Independent Farm Operations Over Time</p>
+            <span class="date-range">February 2022 – December 2025</span>
+        </header>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Farms in Feb 2022</div>
+                <div class="stat-value" id="stat-start">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Farms in Dec 2025</div>
+                <div class="stat-value" id="stat-current">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Net Change</div>
+                <div class="stat-value" id="stat-change">—</div>
+                <div class="stat-change negative" id="stat-change-pct"></div>
+            </div>
+        </div>
+        <div class="chart-section">
+            <div class="chart-header">
+                <h2 class="chart-title">Statewide Independent Farms</h2>
+                <div class="chart-controls">
+                    <button class="btn" onclick="resetZoom('stateChart')">Reset Zoom</button>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="stateChart"></canvas>
+            </div>
+            <p class="chart-hint">Click and drag to zoom • Double-click to reset • Scroll to zoom</p>
+        </div>
+        <div class="chart-section">
+            <div class="chart-header">
+                <h2 class="chart-title">Independent Farms in Top 5 Counties</h2>
+                <div class="chart-controls">
+                    <button class="btn" onclick="resetZoom('topCountyChart')">Reset Zoom</button>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="topCountyChart"></canvas>
+            </div>
+            <p class="chart-hint">Click legend items to show/hide counties • Click and drag to zoom</p>
+        </div>
+        <div class="chart-section">
+            <div class="chart-header">
+                <h2 class="chart-title">Independent Farms in Other Counties</h2>
+                <div class="chart-controls">
+                    <button class="btn" onclick="resetZoom('otherCountyChart')">Reset Zoom</button>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="otherCountyChart"></canvas>
+            </div>
+            <p class="chart-hint">Click legend items to show/hide counties • Click and drag to zoom</p>
+        </div>
+        <div class="chart-section">
+            <div class="chart-header">
+                <h2 class="chart-title">County Summary</h2>
+            </div>
+            <div class="table-container">
+                <table id="countyTable">
+                    <thead>
+                        <tr>
+                            <th data-sort="county">County</th>
+                            <th data-sort="first">Feb 2022</th>
+                            <th data-sort="last">Dec 2025</th>
+                            <th data-sort="change">Change</th>
+                            <th data-sort="pct">% Change</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+        <div class="methodology">
+            <h2>Methodology</h2>
+            <p><strong>Data Source:</strong> California Department of Cannabis Control (DCC) Unified License Search</p>
+            <p><strong>Metric Definition:</strong> "Independent farms" represents the count of distinct business legal names holding active cultivation licenses, excluding Nursery and Processor license types.</p>
+            <p><strong>Why This Metric:</strong> Unlike total licenses or acreage calculations, independent farm counts are not affected by uncertainty around Type 5 (Large) license canopy sizes, which have no defined maximum and require separate PRA requests to quantify.</p>
+            <ul>
+                <li>Status filter: Active licenses only</li>
+                <li>License types: Cultivation only (excludes Nursery, Processor)</li>
+                <li>Counting method: COUNT(DISTINCT businessLegalName)</li>
+                <li>Data points excluded: 5 dates with anomalous data quality issues</li>
+            </ul>
+        </div>
+        <footer>
+            Data from <a href="https://search.cannabis.ca.gov/" target="_blank">California DCC</a> • Last updated December 2025
+        </footer>
+    </div>
+    <script>
+        const rawData = [
+            {"date": "2022-02-28", "statewide": 3227, "counties": {"Humboldt": 892, "Mendocino": 603, "Trinity": 353, "Santa Barbara": 70, "Los Angeles": 273, "Nevada": 163, "Alameda": 50, "Lake": 110, "Riverside": 65, "Sonoma": 101, "San Bernardino": 64, "Sacramento": 69, "Monterey": 104, "Santa Cruz": 62}},
+            {"date": "2023-01-17", "statewide": 3155, "counties": {"Humboldt": 838, "Mendocino": 541, "Trinity": 331, "Santa Barbara": 63, "Los Angeles": 321, "Nevada": 157, "Alameda": 70, "Lake": 94, "Riverside": 78, "Sonoma": 89, "San Bernardino": 77, "Sacramento": 88, "Monterey": 89, "Santa Cruz": 48}},
+            {"date": "2023-01-30", "statewide": 3131, "counties": {"Humboldt": 824, "Mendocino": 534, "Trinity": 327, "Santa Barbara": 63, "Los Angeles": 321, "Nevada": 157, "Alameda": 70, "Lake": 93, "Riverside": 79, "Sonoma": 88, "San Bernardino": 78, "Sacramento": 89, "Monterey": 89, "Santa Cruz": 49}},
+            {"date": "2023-02-11", "statewide": 3117, "counties": {"Humboldt": 819, "Mendocino": 529, "Trinity": 327, "Santa Barbara": 62, "Los Angeles": 319, "Nevada": 154, "Alameda": 70, "Lake": 93, "Riverside": 79, "Sonoma": 87, "San Bernardino": 79, "Sacramento": 89, "Monterey": 89, "Santa Cruz": 49}},
+            {"date": "2023-02-13", "statewide": 3116, "counties": {"Humboldt": 819, "Mendocino": 529, "Trinity": 327, "Santa Barbara": 62, "Los Angeles": 319, "Nevada": 153, "Alameda": 70, "Lake": 93, "Riverside": 79, "Sonoma": 87, "San Bernardino": 79, "Sacramento": 89, "Monterey": 89, "Santa Cruz": 49}},
+            {"date": "2023-03-02", "statewide": 3103, "counties": {"Humboldt": 817, "Mendocino": 527, "Trinity": 327, "Santa Barbara": 62, "Los Angeles": 317, "Nevada": 154, "Alameda": 70, "Lake": 92, "Riverside": 77, "Sonoma": 83, "San Bernardino": 80, "Sacramento": 89, "Monterey": 88, "Santa Cruz": 49}},
+            {"date": "2023-03-04", "statewide": 3103, "counties": {"Humboldt": 815, "Mendocino": 528, "Trinity": 326, "Santa Barbara": 62, "Los Angeles": 318, "Nevada": 154, "Alameda": 70, "Lake": 93, "Riverside": 77, "Sonoma": 83, "San Bernardino": 80, "Sacramento": 89, "Monterey": 87, "Santa Cruz": 50}},
+            {"date": "2023-03-09", "statewide": 3089, "counties": {"Humboldt": 811, "Mendocino": 523, "Trinity": 326, "Santa Barbara": 61, "Los Angeles": 318, "Nevada": 154, "Alameda": 70, "Lake": 92, "Riverside": 77, "Sonoma": 82, "San Bernardino": 80, "Sacramento": 89, "Monterey": 87, "Santa Cruz": 50}},
+            {"date": "2023-04-06", "statewide": 2949, "counties": {"Humboldt": 766, "Mendocino": 491, "Trinity": 322, "Santa Barbara": 53, "Los Angeles": 313, "Nevada": 150, "Alameda": 77, "Lake": 88, "Riverside": 76, "Sonoma": 80, "San Bernardino": 77, "Sacramento": 86, "Monterey": 72, "Santa Cruz": 46}},
+            {"date": "2023-04-07", "statewide": 2950, "counties": {"Humboldt": 766, "Mendocino": 489, "Trinity": 322, "Santa Barbara": 53, "Los Angeles": 313, "Nevada": 151, "Alameda": 77, "Lake": 88, "Riverside": 76, "Sonoma": 80, "San Bernardino": 77, "Sacramento": 86, "Monterey": 73, "Santa Cruz": 46}},
+            {"date": "2023-04-17", "statewide": 2953, "counties": {"Humboldt": 767, "Mendocino": 489, "Trinity": 322, "Santa Barbara": 56, "Los Angeles": 312, "Nevada": 152, "Alameda": 75, "Lake": 87, "Riverside": 77, "Sonoma": 81, "San Bernardino": 77, "Sacramento": 87, "Monterey": 72, "Santa Cruz": 46}},
+            {"date": "2023-04-18", "statewide": 2952, "counties": {"Humboldt": 767, "Mendocino": 488, "Trinity": 322, "Santa Barbara": 56, "Los Angeles": 312, "Nevada": 152, "Alameda": 75, "Lake": 87, "Riverside": 77, "Sonoma": 82, "San Bernardino": 77, "Sacramento": 87, "Monterey": 71, "Santa Cruz": 46}},
+            {"date": "2023-05-16", "statewide": 2912, "counties": {"Humboldt": 763, "Mendocino": 475, "Trinity": 315, "Santa Barbara": 54, "Los Angeles": 311, "Nevada": 155, "Alameda": 75, "Lake": 86, "Riverside": 75, "Sonoma": 77, "San Bernardino": 76, "Sacramento": 89, "Monterey": 65, "Santa Cruz": 45}},
+            {"date": "2023-06-21", "statewide": 2890, "counties": {"Humboldt": 763, "Mendocino": 463, "Trinity": 314, "Santa Barbara": 52, "Los Angeles": 308, "Nevada": 154, "Alameda": 71, "Lake": 81, "Riverside": 77, "Sonoma": 81, "San Bernardino": 77, "Sacramento": 88, "Monterey": 60, "Santa Cruz": 45}},
+            {"date": "2023-07-24", "statewide": 2884, "counties": {"Humboldt": 753, "Mendocino": 472, "Trinity": 311, "Santa Barbara": 50, "Los Angeles": 314, "Nevada": 149, "Alameda": 72, "Lake": 81, "Riverside": 81, "Sonoma": 74, "San Bernardino": 80, "Sacramento": 89, "Monterey": 55, "Santa Cruz": 44}},
+            {"date": "2023-07-31", "statewide": 2873, "counties": {"Humboldt": 743, "Mendocino": 470, "Trinity": 311, "Santa Barbara": 50, "Los Angeles": 313, "Nevada": 150, "Alameda": 73, "Lake": 82, "Riverside": 80, "Sonoma": 73, "San Bernardino": 80, "Sacramento": 89, "Monterey": 56, "Santa Cruz": 41}},
+            {"date": "2023-08-02", "statewide": 2872, "counties": {"Humboldt": 743, "Mendocino": 470, "Trinity": 310, "Santa Barbara": 50, "Los Angeles": 314, "Nevada": 150, "Alameda": 73, "Lake": 82, "Riverside": 80, "Sonoma": 73, "San Bernardino": 80, "Sacramento": 89, "Monterey": 56, "Santa Cruz": 41}},
+            {"date": "2023-09-15", "statewide": 2845, "counties": {"Humboldt": 739, "Mendocino": 463, "Trinity": 309, "Santa Barbara": 50, "Los Angeles": 313, "Nevada": 151, "Alameda": 73, "Lake": 84, "Riverside": 78, "Sonoma": 66, "San Bernardino": 80, "Sacramento": 88, "Monterey": 50, "Santa Cruz": 39}},
+            {"date": "2023-10-06", "statewide": 2822, "counties": {"Humboldt": 733, "Mendocino": 455, "Trinity": 308, "Santa Barbara": 50, "Los Angeles": 304, "Nevada": 146, "Alameda": 74, "Lake": 85, "Riverside": 78, "Sonoma": 66, "San Bernardino": 80, "Sacramento": 89, "Monterey": 52, "Santa Cruz": 39}},
+            {"date": "2023-11-09", "statewide": 2816, "counties": {"Humboldt": 730, "Mendocino": 452, "Trinity": 310, "Santa Barbara": 50, "Los Angeles": 303, "Nevada": 149, "Alameda": 74, "Lake": 86, "Riverside": 79, "Sonoma": 66, "San Bernardino": 83, "Sacramento": 87, "Monterey": 51, "Santa Cruz": 38}},
+            {"date": "2023-11-26", "statewide": 2814, "counties": {"Humboldt": 728, "Mendocino": 450, "Trinity": 309, "Santa Barbara": 50, "Los Angeles": 302, "Nevada": 148, "Alameda": 74, "Lake": 86, "Riverside": 80, "Sonoma": 66, "San Bernardino": 83, "Sacramento": 89, "Monterey": 51, "Santa Cruz": 38}},
+            {"date": "2023-12-05", "statewide": 2811, "counties": {"Humboldt": 727, "Mendocino": 448, "Trinity": 308, "Santa Barbara": 50, "Los Angeles": 301, "Nevada": 150, "Alameda": 74, "Lake": 85, "Riverside": 80, "Sonoma": 65, "San Bernardino": 85, "Sacramento": 89, "Monterey": 49, "Santa Cruz": 38}},
+            {"date": "2023-12-08", "statewide": 2813, "counties": {"Humboldt": 727, "Mendocino": 448, "Trinity": 308, "Santa Barbara": 50, "Los Angeles": 301, "Nevada": 149, "Alameda": 74, "Lake": 85, "Riverside": 79, "Sonoma": 65, "San Bernardino": 89, "Sacramento": 89, "Monterey": 49, "Santa Cruz": 38}},
+            {"date": "2023-12-11", "statewide": 2809, "counties": {"Humboldt": 726, "Mendocino": 448, "Trinity": 308, "Santa Barbara": 49, "Los Angeles": 300, "Nevada": 149, "Alameda": 74, "Lake": 85, "Riverside": 79, "Sonoma": 65, "San Bernardino": 89, "Sacramento": 89, "Monterey": 49, "Santa Cruz": 38}},
+            {"date": "2023-12-12", "statewide": 2811, "counties": {"Humboldt": 726, "Mendocino": 448, "Trinity": 308, "Santa Barbara": 49, "Los Angeles": 300, "Nevada": 149, "Alameda": 74, "Lake": 85, "Riverside": 81, "Sonoma": 65, "San Bernardino": 89, "Sacramento": 89, "Monterey": 49, "Santa Cruz": 38}},
+            {"date": "2024-02-07", "statewide": 2810, "counties": {"Humboldt": 725, "Mendocino": 443, "Trinity": 311, "Santa Barbara": 50, "Los Angeles": 299, "Nevada": 150, "Alameda": 72, "Lake": 86, "Riverside": 82, "Sonoma": 66, "San Bernardino": 88, "Sacramento": 92, "Monterey": 48, "Santa Cruz": 37}},
+            {"date": "2024-02-22", "statewide": 2809, "counties": {"Humboldt": 729, "Mendocino": 441, "Trinity": 310, "Santa Barbara": 49, "Los Angeles": 299, "Nevada": 151, "Alameda": 72, "Lake": 85, "Riverside": 83, "Sonoma": 66, "San Bernardino": 88, "Sacramento": 91, "Monterey": 47, "Santa Cruz": 37}},
+            {"date": "2024-03-19", "statewide": 2797, "counties": {"Humboldt": 727, "Mendocino": 440, "Trinity": 314, "Santa Barbara": 48, "Los Angeles": 295, "Nevada": 151, "Alameda": 71, "Lake": 84, "Riverside": 82, "Sonoma": 64, "San Bernardino": 87, "Sacramento": 92, "Monterey": 45, "Santa Cruz": 35}},
+            {"date": "2024-04-30", "statewide": 2765, "counties": {"Humboldt": 712, "Mendocino": 432, "Trinity": 313, "Santa Barbara": 48, "Los Angeles": 294, "Nevada": 148, "Alameda": 69, "Lake": 85, "Riverside": 82, "Sonoma": 64, "San Bernardino": 87, "Sacramento": 92, "Monterey": 45, "Santa Cruz": 33}},
+            {"date": "2024-05-29", "statewide": 2750, "counties": {"Humboldt": 710, "Mendocino": 428, "Trinity": 313, "Santa Barbara": 47, "Los Angeles": 294, "Nevada": 149, "Alameda": 70, "Lake": 83, "Riverside": 83, "Sonoma": 65, "San Bernardino": 88, "Sacramento": 92, "Monterey": 44, "Santa Cruz": 32}},
+            {"date": "2024-06-13", "statewide": 2741, "counties": {"Humboldt": 700, "Mendocino": 424, "Trinity": 315, "Santa Barbara": 45, "Los Angeles": 292, "Nevada": 148, "Alameda": 69, "Lake": 84, "Riverside": 84, "Sonoma": 64, "San Bernardino": 88, "Sacramento": 93, "Monterey": 45, "Santa Cruz": 34}},
+            {"date": "2024-06-19", "statewide": 2738, "counties": {"Humboldt": 696, "Mendocino": 423, "Trinity": 315, "Santa Barbara": 46, "Los Angeles": 292, "Nevada": 148, "Alameda": 69, "Lake": 86, "Riverside": 83, "Sonoma": 64, "San Bernardino": 88, "Sacramento": 93, "Monterey": 45, "Santa Cruz": 34}},
+            {"date": "2024-06-27", "statewide": 2732, "counties": {"Humboldt": 695, "Mendocino": 417, "Trinity": 315, "Santa Barbara": 47, "Los Angeles": 291, "Nevada": 150, "Alameda": 71, "Lake": 85, "Riverside": 83, "Sonoma": 63, "San Bernardino": 87, "Sacramento": 93, "Monterey": 46, "Santa Cruz": 34}},
+            {"date": "2024-07-31", "statewide": 2715, "counties": {"Humboldt": 685, "Mendocino": 409, "Trinity": 315, "Santa Barbara": 47, "Los Angeles": 284, "Nevada": 152, "Alameda": 75, "Lake": 89, "Riverside": 81, "Sonoma": 64, "San Bernardino": 88, "Sacramento": 93, "Monterey": 46, "Santa Cruz": 35}},
+            {"date": "2024-08-08", "statewide": 2716, "counties": {"Humboldt": 686, "Mendocino": 410, "Trinity": 315, "Santa Barbara": 47, "Los Angeles": 285, "Nevada": 153, "Alameda": 76, "Lake": 88, "Riverside": 81, "Sonoma": 64, "San Bernardino": 88, "Sacramento": 93, "Monterey": 44, "Santa Cruz": 35}},
+            {"date": "2024-08-21", "statewide": 2710, "counties": {"Humboldt": 685, "Mendocino": 412, "Trinity": 314, "Santa Barbara": 48, "Los Angeles": 283, "Nevada": 152, "Alameda": 76, "Lake": 88, "Riverside": 80, "Sonoma": 64, "San Bernardino": 87, "Sacramento": 93, "Monterey": 44, "Santa Cruz": 35}},
+            {"date": "2024-08-26", "statewide": 2710, "counties": {"Humboldt": 681, "Mendocino": 416, "Trinity": 311, "Santa Barbara": 49, "Los Angeles": 285, "Nevada": 152, "Alameda": 73, "Lake": 87, "Riverside": 81, "Sonoma": 64, "San Bernardino": 86, "Sacramento": 92, "Monterey": 45, "Santa Cruz": 35}},
+            {"date": "2024-09-13", "statewide": 2684, "counties": {"Humboldt": 680, "Mendocino": 400, "Trinity": 307, "Santa Barbara": 48, "Los Angeles": 282, "Nevada": 152, "Alameda": 73, "Lake": 86, "Riverside": 82, "Sonoma": 64, "San Bernardino": 86, "Sacramento": 93, "Monterey": 45, "Santa Cruz": 35}},
+            {"date": "2024-10-03", "statewide": 2676, "counties": {"Humboldt": 679, "Mendocino": 401, "Trinity": 311, "Santa Barbara": 48, "Los Angeles": 280, "Nevada": 151, "Alameda": 71, "Lake": 85, "Riverside": 80, "Sonoma": 64, "San Bernardino": 86, "Sacramento": 95, "Monterey": 45, "Santa Cruz": 35}},
+            {"date": "2024-10-07", "statewide": 2678, "counties": {"Humboldt": 679, "Mendocino": 402, "Trinity": 310, "Santa Barbara": 48, "Los Angeles": 281, "Nevada": 152, "Alameda": 71, "Lake": 85, "Riverside": 80, "Sonoma": 64, "San Bernardino": 86, "Sacramento": 95, "Monterey": 45, "Santa Cruz": 35}},
+            {"date": "2024-10-08", "statewide": 2678, "counties": {"Humboldt": 679, "Mendocino": 401, "Trinity": 310, "Santa Barbara": 48, "Los Angeles": 281, "Nevada": 152, "Alameda": 71, "Lake": 85, "Riverside": 80, "Sonoma": 64, "San Bernardino": 86, "Sacramento": 95, "Monterey": 45, "Santa Cruz": 35}},
+            {"date": "2024-11-05", "statewide": 2667, "counties": {"Humboldt": 668, "Mendocino": 398, "Trinity": 311, "Santa Barbara": 48, "Los Angeles": 279, "Nevada": 150, "Alameda": 77, "Lake": 81, "Riverside": 79, "Sonoma": 61, "San Bernardino": 87, "Sacramento": 94, "Monterey": 45, "Santa Cruz": 35}},
+            {"date": "2024-11-12", "statewide": 2671, "counties": {"Humboldt": 668, "Mendocino": 398, "Trinity": 311, "Santa Barbara": 48, "Los Angeles": 279, "Nevada": 149, "Alameda": 77, "Lake": 81, "Riverside": 79, "Sonoma": 62, "San Bernardino": 88, "Sacramento": 95, "Monterey": 45, "Santa Cruz": 35}},
+            {"date": "2024-11-26", "statewide": 2663, "counties": {"Humboldt": 666, "Mendocino": 394, "Trinity": 309, "Santa Barbara": 48, "Los Angeles": 277, "Nevada": 149, "Alameda": 78, "Lake": 81, "Riverside": 79, "Sonoma": 61, "San Bernardino": 88, "Sacramento": 94, "Monterey": 48, "Santa Cruz": 36}},
+            {"date": "2025-01-14", "statewide": 2624, "counties": {"Humboldt": 646, "Mendocino": 388, "Trinity": 311, "Santa Barbara": 47, "Los Angeles": 274, "Nevada": 148, "Alameda": 76, "Lake": 80, "Riverside": 77, "Sonoma": 61, "San Bernardino": 89, "Sacramento": 94, "Monterey": 45, "Santa Cruz": 34}},
+            {"date": "2025-02-13", "statewide": 2605, "counties": {"Humboldt": 635, "Mendocino": 382, "Trinity": 313, "Santa Barbara": 46, "Los Angeles": 271, "Nevada": 150, "Alameda": 79, "Lake": 81, "Riverside": 77, "Sonoma": 60, "San Bernardino": 88, "Sacramento": 96, "Monterey": 45, "Santa Cruz": 34}},
+            {"date": "2025-02-25", "statewide": 2606, "counties": {"Humboldt": 631, "Mendocino": 381, "Trinity": 311, "Santa Barbara": 48, "Los Angeles": 273, "Nevada": 149, "Alameda": 82, "Lake": 80, "Riverside": 79, "Sonoma": 60, "San Bernardino": 88, "Sacramento": 96, "Monterey": 45, "Santa Cruz": 34}},
+            {"date": "2025-03-13", "statewide": 2603, "counties": {"Humboldt": 630, "Mendocino": 376, "Trinity": 314, "Santa Barbara": 48, "Los Angeles": 276, "Nevada": 146, "Alameda": 89, "Lake": 81, "Riverside": 77, "Sonoma": 59, "San Bernardino": 88, "Sacramento": 95, "Monterey": 46, "Santa Cruz": 32}},
+            {"date": "2025-03-27", "statewide": 2596, "counties": {"Humboldt": 620, "Mendocino": 375, "Trinity": 316, "Santa Barbara": 49, "Los Angeles": 275, "Nevada": 146, "Alameda": 90, "Lake": 83, "Riverside": 78, "Sonoma": 58, "San Bernardino": 90, "Sacramento": 94, "Monterey": 46, "Santa Cruz": 32}},
+            {"date": "2025-07-23", "statewide": 2585, "counties": {"Humboldt": 590, "Mendocino": 371, "Trinity": 328, "Santa Barbara": 51, "Los Angeles": 276, "Nevada": 137, "Alameda": 96, "Lake": 94, "Riverside": 82, "Sonoma": 57, "San Bernardino": 90, "Sacramento": 97, "Monterey": 44, "Santa Cruz": 32}},
+            {"date": "2025-08-18", "statewide": 2577, "counties": {"Humboldt": 587, "Mendocino": 367, "Trinity": 322, "Santa Barbara": 51, "Los Angeles": 279, "Nevada": 138, "Alameda": 99, "Lake": 96, "Riverside": 83, "Sonoma": 56, "San Bernardino": 90, "Sacramento": 97, "Monterey": 46, "Santa Cruz": 30}},
+            {"date": "2025-12-15", "statewide": 2530, "counties": {"Humboldt": 573, "Mendocino": 363, "Trinity": 312, "Santa Barbara": 50, "Los Angeles": 276, "Nevada": 137, "Alameda": 102, "Lake": 95, "Riverside": 86, "Sonoma": 44, "San Bernardino": 96, "Sacramento": 96, "Monterey": 44, "Santa Cruz": 25}},
+            {"date": "2025-12-29", "statewide": 2512, "counties": {"Humboldt": 565, "Mendocino": 359, "Trinity": 311, "Santa Barbara": 50, "Los Angeles": 275, "Nevada": 137, "Alameda": 102, "Lake": 93, "Riverside": 85, "Sonoma": 42, "San Bernardino": 97, "Sacramento": 96, "Monterey": 44, "Santa Cruz": 25}}
+        ];
+
+        const top5Counties = ['Humboldt', 'Mendocino', 'Trinity', 'Los Angeles', 'Nevada'];
+        const otherCounties = ['Santa Barbara', 'Alameda', 'Lake', 'Riverside', 'Sonoma', 'San Bernardino', 'Sacramento', 'Monterey', 'Santa Cruz'];
+        const allCounties = [...top5Counties, ...otherCounties];
+
+        const countyColors = {
+            'Humboldt': '#2d5a27', 'Mendocino': '#4a8b4a', 'Trinity': '#6bab6b',
+            'Santa Barbara': '#e67e22', 'Los Angeles': '#3498db', 'Nevada': '#1abc9c',
+            'Alameda': '#e74c3c', 'Lake': '#f39c12', 'Riverside': '#95a5a6',
+            'Sonoma': '#d35400', 'San Bernardino': '#8e44ad', 'Sacramento': '#27ae60',
+            'Monterey': '#2980b9', 'Santa Cruz': '#c0392b'
+        };
+
+        const dates = rawData.map(d => d.date);
+        const statewideCounts = rawData.map(d => d.statewide);
+        const firstData = rawData[0];
+        const lastData = rawData[rawData.length - 1];
+        const change = lastData.statewide - firstData.statewide;
+        const pctChange = ((change / firstData.statewide) * 100).toFixed(1);
+
+        document.getElementById('stat-start').textContent = firstData.statewide.toLocaleString();
+        document.getElementById('stat-current').textContent = lastData.statewide.toLocaleString();
+        document.getElementById('stat-change').textContent = change.toLocaleString();
+        document.getElementById('stat-change-pct').textContent = pctChange + '%';
+
+        function formatDate(dateStr) {
+            const d = new Date(dateStr);
+            return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+        }
+
+        const zoomOptions = {
+            zoom: { wheel: { enabled: true }, pinch: { enabled: true }, drag: { enabled: true }, mode: 'x' },
+            pan: { enabled: true, mode: 'x' }
+        };
+
+        const stateCtx = document.getElementById('stateChart').getContext('2d');
+        const stateChart = new Chart(stateCtx, {
+            type: 'line',
+            data: {
+                labels: dates,
+                datasets: [{
+                    label: 'Independent Farms',
+                    data: statewideCounts,
+                    borderColor: '#2d5a27',
+                    backgroundColor: 'rgba(45, 90, 39, 0.1)',
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 3,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { intersect: false, mode: 'index' },
+                plugins: {
+                    legend: { display: false },
+                    zoom: zoomOptions,
+                    tooltip: {
+                        callbacks: {
+                            title: (items) => formatDate(items[0].label),
+                            label: (item) => item.parsed.y.toLocaleString() + ' farms'
+                        }
+                    }
+                },
+                scales: {
+                    x: { ticks: { maxTicksLimit: 10, callback: function(val) { return formatDate(this.getLabelForValue(val)); } }, grid: { display: false } },
+                    y: { beginAtZero: false, ticks: { callback: (val) => val.toLocaleString() } }
+                }
+            }
+        });
+
+        const top5Datasets = top5Counties.map(county => ({
+            label: county,
+            data: rawData.map(d => d.counties[county]),
+            borderColor: countyColors[county],
+            backgroundColor: 'transparent',
+            tension: 0.3,
+            pointRadius: 2,
+            pointHoverRadius: 5,
+            borderWidth: 2
+        }));
+
+        const topCountyCtx = document.getElementById('topCountyChart').getContext('2d');
+        const topCountyChart = new Chart(topCountyCtx, {
+            type: 'line',
+            data: { labels: dates, datasets: top5Datasets },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { intersect: false, mode: 'index' },
+                plugins: {
+                    legend: { position: 'bottom', labels: { boxWidth: 12, padding: 15, usePointStyle: true } },
+                    zoom: zoomOptions,
+                    tooltip: {
+                        callbacks: {
+                            title: (items) => formatDate(items[0].label),
+                            label: (item) => item.dataset.label + ': ' + item.parsed.y.toLocaleString()
+                        }
+                    }
+                },
+                scales: {
+                    x: { ticks: { maxTicksLimit: 10, callback: function(val) { return formatDate(this.getLabelForValue(val)); } }, grid: { display: false } },
+                    y: { beginAtZero: false, ticks: { callback: (val) => val.toLocaleString() } }
+                }
+            }
+        });
+
+        const otherDatasets = otherCounties.map(county => ({
+            label: county,
+            data: rawData.map(d => d.counties[county]),
+            borderColor: countyColors[county],
+            backgroundColor: 'transparent',
+            tension: 0.3,
+            pointRadius: 2,
+            pointHoverRadius: 5,
+            borderWidth: 2
+        }));
+
+        const otherCountyCtx = document.getElementById('otherCountyChart').getContext('2d');
+        const otherCountyChart = new Chart(otherCountyCtx, {
+            type: 'line',
+            data: { labels: dates, datasets: otherDatasets },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { intersect: false, mode: 'index' },
+                plugins: {
+                    legend: { position: 'bottom', labels: { boxWidth: 12, padding: 15, usePointStyle: true } },
+                    zoom: zoomOptions,
+                    tooltip: {
+                        callbacks: {
+                            title: (items) => formatDate(items[0].label),
+                            label: (item) => item.dataset.label + ': ' + item.parsed.y.toLocaleString()
+                        }
+                    }
+                },
+                scales: {
+                    x: { ticks: { maxTicksLimit: 10, callback: function(val) { return formatDate(this.getLabelForValue(val)); } }, grid: { display: false } },
+                    y: { beginAtZero: false, ticks: { callback: (val) => val.toLocaleString() } }
+                }
+            }
+        });
+
+        function resetZoom(chartId) {
+            if (chartId === 'stateChart') stateChart.resetZoom();
+            else if (chartId === 'topCountyChart') topCountyChart.resetZoom();
+            else if (chartId === 'otherCountyChart') otherCountyChart.resetZoom();
+        }
+
+        let sortColumn = 'change';
+        let sortDirection = 'asc';
+
+        function buildTableData() {
+            return allCounties.map(county => ({
+                county,
+                first: firstData.counties[county],
+                last: lastData.counties[county],
+                change: lastData.counties[county] - firstData.counties[county],
+                pct: ((lastData.counties[county] - firstData.counties[county]) / firstData.counties[county] * 100).toFixed(1)
+            }));
+        }
+
+        function renderTable() {
+            const tbody = document.querySelector('#countyTable tbody');
+            let data = buildTableData();
+            data.sort((a, b) => {
+                let valA = a[sortColumn], valB = b[sortColumn];
+                if (sortColumn === 'county') return sortDirection === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+                if (sortColumn === 'pct') { valA = parseFloat(valA); valB = parseFloat(valB); }
+                return sortDirection === 'asc' ? valA - valB : valB - valA;
+            });
+            tbody.innerHTML = data.map(row => 
+                '<tr><td>' + row.county + '</td><td>' + row.first + '</td><td>' + row.last + '</td><td class="' + (row.change < 0 ? 'change-negative' : 'change-positive') + '">' + (row.change > 0 ? '+' : '') + row.change + '</td><td class="' + (parseFloat(row.pct) < 0 ? 'change-negative' : 'change-positive') + '">' + row.pct + '%</td></tr>'
+            ).join('');
+            document.querySelectorAll('#countyTable th').forEach(th => {
+                th.classList.remove('sorted-asc', 'sorted-desc');
+                if (th.dataset.sort === sortColumn) th.classList.add(sortDirection === 'asc' ? 'sorted-asc' : 'sorted-desc');
+            });
+        }
+
+        document.querySelectorAll('#countyTable th').forEach(th => {
+            th.addEventListener('click', () => {
+                const column = th.dataset.sort;
+                if (sortColumn === column) sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+                else { sortColumn = column; sortDirection = 'asc'; }
+                renderTable();
+            });
+        });
+
+        renderTable();
+    </script>
+</body>
+</html>
